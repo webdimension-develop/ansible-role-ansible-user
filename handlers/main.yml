@@ -1,0 +1,15 @@
+---
+# handlers file for roles/ansible-user
+- name: Restart sshd
+  become: true
+  systemd:
+    state: restarted
+    name: sshd
+    enabled: true
+
+- name: Restart firewalld
+  become: true
+  systemd:
+    state: restarted
+    name: firewalld
+    enabled: true

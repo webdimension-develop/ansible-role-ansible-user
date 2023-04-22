@@ -1,0 +1,108 @@
+---
+# tasks file for roles/ansible-useadd
+
+- name: User-control
+  become: true
+  user:
+    name: "{{ item.name }}"
+    groups: "{{ item.groups }}"
+    group: "{{ item.group }}"
+    state: "{{ item.state }}"
+    remove: "{{ item.remove }}"
+    create_home: "{{ item.create_home }}"
+    password: "{{ item.password }}"
+    shell: "{{ item.login_shell }}"
+    comment: "{{ item.comment }}"
+    expires: "{{ item.expires }}"
+  with_items: "{{ ansible_users }}"
+
+- name: Set public-key
+  become: true
+  ansible.posix.authorized_key:
+    user: "{{ item.name }}"
+    state: "{{ item.state }}"
+    key: "{{ lookup('file', '{{ item.public_key }}') }}"
+  when: item.sudo == 'present'
+  with_items: "{{ ansible_users }}"
+
+- name: Set secret-key
+  become: true
+  copy:
+    content: "{{ lookup('file', '{{ item.secret_key }}') }}"
+    dest: "/home/{{ item.name }}/.ssh/id_rsa"
+    owner: "{{ item.name }}"
+    group: "{{ item.name }}"
+    mode: '600'
+  with_items: "{{ ansible_users }}"
+  when:
+    - item.secret_key is defined
+    - item.create_home == 'yes'
+
+- name: Add sudo authorize
+  become: true
+  lineinfile:
+    dest: /etc/sudoers
+    backup: true
+    line: "{{ item.name }} ALL=(ALL) NOPASSWD: ALL"
+  when: item.sudo == 'present'
+  with_items: "{{ ansible_users }}"
+
+# sshd
+- name: Disable password auth
+  become: true
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^PasswordAuthentication"
+    insertafter: "^#PasswordAuthentication"
+    line: "PasswordAuthentication no"
+  notify: Restart sshd
+
+- name: Disable challenge response
+  become: true
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^ChallengeResponseAuthentication"
+    insertafter: "^#ChallengeResponseAuthentication"
+    line: "ChallengeResponseAuthentication no"
+  notify: Restart sshd
+
+- name: Disable root login
+  become: true
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^PermitRootLogin"
+    insertafter: "^#PermitRootLogin"
+    line: "PermitRootLogin no"
+  notify: Restart sshd
+
+- name: Sshd | change sshd port to {{ sshd_port }}
+  become: true
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^Port"
+    insertafter: "^#Port"
+    line: "Port {{ sshd_port }}"
+  notify: Restart sshd
+
+# firewalld
+- name: Open service by firewalld
+  become: true
+  ansible.posix.firewalld:
+    zone: "{{ item.zone }}"
+    service: "{{ item.service }}"
+    permanent: "{{ item.permanent }}"
+    state: "{{ item.state }}"
+    immediate: "{{ item.immediate }}"
+  with_items: "{{ firewalld_service }}"
+  when: firewalld_service is defined
+  notify: Restart firewalld
+
+- name: Open port by firewalld
+  become: true
+  ansible.posix.firewalld:
+    port: "{{ item.port }}"
+    permanent: "{{ item.permanent }}"
+    state: "{{ item.state }}"
+  with_items: "{{ firewalld_ports }}"
+  when: firewalld_ports is defined
+  notify: Restart firewalld
