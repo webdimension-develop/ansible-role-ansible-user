@@ -93,8 +93,8 @@
     permanent: "{{ item.permanent }}"
     state: "{{ item.state }}"
     immediate: "{{ item.immediate }}"
-  with_items: "{{ firewalld_service }}"
-  when: firewalld_service is defined
+  with_items: "{{ ansible_user_firewalld_service }}"
+  when: ansible_user_firewalld_service is defined
   notify: Restart firewalld
 
 - name: Open port by firewalld
@@ -103,6 +103,6 @@
     port: "{{ item.port }}"
     permanent: "{{ item.permanent }}"
     state: "{{ item.state }}"
-  with_items: "{{ firewalld_ports }}"
-  when: firewalld_ports is defined
+  with_items: "{{ ansible_user_firewalld_ports }}"
+  when: ansible_user_firewalld_ports is defined
   notify: Restart firewalld
