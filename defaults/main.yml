@@ -9,7 +9,7 @@ ansible_users:
     state: 'present'
     remove: 'no'
     password: "{{ secret.ansible_users.ansible_user.password }}"
-    public_key: "files/keys/ansible_rsa.pub"
+    public_key: "/root/.ssh/ansible_rsa.pub"
     login_shell: '/bin/bash'
     create_home: 'yes'
     sudo: 'present'
