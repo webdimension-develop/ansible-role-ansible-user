@@ -31,7 +31,7 @@
     content: "{{ lookup('file', '{{ item.secret_key }}') }}"
     dest: "/home/{{ item.name }}/.ssh/id_rsa"
     owner: "{{ item.name }}"
-    group: "{{ item.name }}"
+    group: "{{ item.group }}"
     mode: '600'
   with_items: "{{ ansible_users }}"
   when:
