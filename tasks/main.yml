@@ -84,6 +84,73 @@
     line: "Port {{ sshd_port }}"
   notify: Restart sshd
 
+- name: ssh allow ip
+  become: true
+  firewalld:
+    rich_rule: 'rule family=ipv4 source address="{{ item }}" service name="ssh" accept'
+    permanent: yes
+    state: enabled
+  with_items: "{{ ssh_allow_ips }}"
+  notify: Restart firewalld
+  tags:
+    - ssh-allow-ips
+
+- name: ssh  port
+  become:  true
+  firewalld:
+    rich_rule: 'rule family=ipv4 source address="{{ item }}" port port="{{ sshd_port }}" protocol="tcp" accept'
+    permanent: yes
+    state: enabled
+  with_items: "{{ ssh_allow_ips }}"
+  notify: Restart firewalld
+  tags:
+    - ssh-allow-ips
+
+- name: ssh deny ip
+  become: true
+  firewalld:
+    rich_rule: 'rule family=ipv4 source address="{{ item }}" service name="ssh" accept'
+    permanent: yes
+    state: disabled
+  with_items: "{{ ssh_deny_ips }}"
+  when: ssh_deny_ips is defined
+  notify: Restart firewalld
+  tags:
+    - ssh-allow-ips
+
+- name: ssh  port
+  become:  true
+  firewalld:
+    rich_rule: 'rule family=ipv4 source address="{{ item }}" port port="{{ sshd_port }}" protocol="tcp" accept'
+    permanent: yes
+    state: disabled
+  with_items: "{{ ssh_deny_ips }}"
+  when: ssh_deny_ips is defined
+  notify: Restart firewalld
+  tags:
+    - ssh-allow-ips
+
+- name: disabled ssh
+  become: true
+  firewalld:
+    service: ssh
+    permanent: yes
+    state: disabled
+#    state: enabled
+  notify: Restart firewalld
+  tags:
+    - ssh-allow-ips
+
+- name: dhcpv6-client を落とす
+  become: true
+  firewalld:
+    service: dhcpv6-client
+    permanent: yes
+    state: disabled
+  notify: Restart firewalld
+  tags:
+    - ssh-allow-ips
+
 # firewalld
 - name: Open service by firewalld
   become: true
